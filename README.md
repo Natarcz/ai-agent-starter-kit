@@ -14,11 +14,28 @@
 
 ## Быстрый старт
 
+Требуется **Python 3.11+** (`.python-version` подсказывает pyenv/uv).
+`.venv` не версионируется — создание venv нужно один раз; если `.venv` уже
+есть, пропустите первые две строки и просто поставьте зависимости.
+
 ```bash
+# pip
+python3.11 -m venv .venv && source .venv/bin/activate   # только если .venv нет
 pip install -e ".[dev]"
-api-health-mcp        # запуск MCP-сервера
+
+# или uv (быстрее):
+uv venv --python 3.11 .venv
+uv pip install --python .venv/bin/python -e ".[dev]"
+
+api-health-mcp        # запуск MCP-сервера (entrypoint из pyproject.toml)
 pytest tests/         # unit-тесты скриптов
 ```
+
+Для LLM-вызовов скопируйте `.env.example` в `.env` и заполните `ANTHROPIC_API_KEY` (`.env` в `.gitignore`).
+
+MCP-сервер уже зарегистрирован в `.mcp.json` и `.cursor/mcp.json` — Claude Code
+и Cursor подхватят его автоматически, `claude mcp add` не нужен. Для запуска
+без установки пакета: `python mcp_tools/api_health_mcp.py`.
 
 Для CI-ревью добавьте секрет `ANTHROPIC_API_KEY` в Settings → Secrets репозитория (без него ревью gracefully пропускается). Модель ревьюера переопределяется переменной `REVIEW_MODEL` (дефолт — `claude-haiku-4-5`).
 

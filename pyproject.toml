@@ -5,7 +5,7 @@ description = "Reusable workspace with agent rules, skills and MCP tools for AI-
 requires-python = ">=3.11"
 dependencies = [
     "mcp>=1.9,<2",
-    "httpx>=0.27",
+    "httpx>=0.27.1,<1.0",
     "pydantic>=2.7",
 ]
 
