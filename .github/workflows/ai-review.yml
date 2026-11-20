@@ -1,0 +1,85 @@
+name: AI Pull Request Guardian
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  ai-code-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install httpx
+
+      - name: Self-check script syntax
+        run: python -m py_compile scripts/ai_review.py
+
+      - name: Run AI review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_BASE_REF: ${{ github.base_ref || 'main' }}
+          REVIEW_MODEL: ${{ vars.REVIEW_MODEL || 'claude-haiku-4-5' }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            printf '## AI Review\n\n⏭️ Ревью пропущено: секрет `ANTHROPIC_API_KEY` не настроен в репозитории.' > review.md
+            exit 0
+          fi
+          python scripts/ai_review.py --out review.md
+
+      - name: Upsert review comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.existsSync('review.md')
+              ? fs.readFileSync('review.md', 'utf8').slice(0, 60000)
+              : '## AI Review\nРевью не выполнено — см. логи job.';
+
+            const issueNumber = context.payload.pull_request?.number;
+            if (!issueNumber) {
+              // workflow_dispatch: PR-контекста нет — отчёт только в логи job.
+              console.log(body);
+              return;
+            }
+
+            // Обновляем прошлый комментарий бота вместо спама новым на каждый push.
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+            });
+            const marker = '## AI Review';
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body && c.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body,
+              });
+            }

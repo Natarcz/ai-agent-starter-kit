@@ -1,0 +1,15 @@
+---
+description: Conventions for MCP tools in mcp_tools/
+globs: mcp_tools/**/*.py
+alwaysApply: false
+---
+
+# MCP Tools
+
+- Tools return pydantic models (see `ApiHealthReport` in `api_health_mcp.py`), never raw `dict` — agents consume a stable schema.
+- Every tool must handle expected failures explicitly (`httpx.HTTPError`, validation errors) and return `ok: false` with an `error` field instead of raising.
+- Network calls: `httpx.AsyncClient` with explicit timeout + bounded retry for retriable errors (5xx/429/timeouts) with backoff. No blocking `requests`.
+- Validate all inputs at the boundary: URL schemes (http/https only — SSRF), required params, size limits. Never pass raw user/agent input to network calls unchecked.
+- Cap output size: truncate large bodies/payloads (see `body_preview[:500]`) — full responses burn the agent's context window and cost tokens.
+- Tool docstrings are read by the model — write them in the project's language, state when to use the tool, what it returns, and its limits.
+- Register new tools on the shared `FastMCP` instance; expose a `main()` entrypoint for `pyproject.toml [project.scripts]`.

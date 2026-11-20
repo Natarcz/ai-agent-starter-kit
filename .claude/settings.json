@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "deny": [
+      "Edit(.github/workflows/**)",
+      "Write(.github/workflows/**)",
+      "Edit(**/.gitlab-ci.yml)",
+      "Write(**/.gitlab-ci.yml)",
+      "Edit(**/deploy/**)",
+      "Write(**/deploy/**)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)"
+    ]
+  }
+}

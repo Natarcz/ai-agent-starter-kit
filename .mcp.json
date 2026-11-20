@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "api-health": {
+      "command": "python",
+      "args": ["mcp_tools/api_health_mcp.py"]
+    }
+  }
+}

@@ -1,0 +1,22 @@
+---
+description: Core engineering guardrails for this project (always on)
+alwaysApply: true
+---
+
+# Engineering Guardrails
+
+Follow `CLAUDE.md` for the full ruleset. Non-negotiables:
+
+- Strict typing: pydantic models or TypedDict at every API boundary. No `Any`, no untyped `dict`.
+- No empty `except`/`catch`. Network calls require timeout + exponential-backoff retry.
+- Secrets only via env vars — never hardcode keys, tokens, or staging URLs.
+- No blocking calls on the main/UI thread; no redundant network polling.
+- Mobile: batch network calls, exponential backoff when offline, offline-first local cache, no memory leaks (listeners/subscriptions), platform conventions (HIG/Material).
+- Before architecture changes or new dependencies: present a short plan and wait for approval.
+- New business logic ships with unit tests for edge cases in the same change.
+- Do not modify `.github/workflows/` or deploy configs without an explicit engineer request.
+- LLM calls: estimate token cost first; use the cheapest model validated on project evals; log usage (model, tokens, latency) per call.
+- Test integrity: never weaken assertions, delete failing tests, or fit mocks to buggy code for a green CI.
+- MCP/tool outputs: cap payload sizes — large responses burn agent context and cost tokens.
+
+For multi-agent work, see `AGENTS.md`.
